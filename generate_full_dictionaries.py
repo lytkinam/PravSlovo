@@ -1,7 +1,7 @@
 
 """
 Скрипт для создания полных словарей православных терминов со склонениями
-Обрабатывает партии part_2 - part_7 и создаёт каталоги part_[N]_full
+Обрабатывает партии part_1 - part_7 и создаёт каталоги part_[N]_full
 """
 
 import pymorphy3
@@ -31,9 +31,9 @@ def is_capitalizable(term: str) -> bool:
     """Проверяет, начинается ли термин с заглавной буквы"""
     return term and term[0].isupper()
 
-def capitalize_if_needed(word: str, original_term: str) -> str:
+def capitalize_if_needed(word: str, original_word: str) -> str:
     """Сохраняет регистр первой буквы как в оригинале"""
-    if is_capitalizable(original_term):
+    if is_capitalizable(original_word):
         return word.capitalize()
     return word.lower()
 
@@ -153,6 +153,7 @@ def generate_full_dictionary(input_file: str, output_file: str):
             f.write(f"\t{form}\tru-RU\t\n")
 
     print(f"   ✅ Сохранено в: {output_file}")
+    return len(sorted_forms)
 
 def main():
     """Основная функция обработки всех партий"""
@@ -160,36 +161,32 @@ def main():
     print("ГЕНЕРАЦИЯ ПОЛНЫХ СЛОВАРЕЙ СО СКЛОНЕНИЯМИ")
     print("="*80)
 
-    # Партии для обработки (пропускаем part_1_sklon_top_30, там уже склонения)
+    # Партии для обработки: part_1, part_2, ..., part_7
     partitions = [
-        ('part_2', 'dictionary.txt'),
-        ('part_3', 'dictionary.txt'),
-        ('part_4', 'dictionary.txt'),
-        ('part_5', 'dictionary.txt'),
-        ('part_6', 'dictionary.txt'),
-        ('part_7', 'dictionary.txt'),
+        ('part_1', 'dictionary.txt', 'part_1_full'),
+        ('part_2', 'dictionary.txt', 'part_2_full'),
+        ('part_3', 'dictionary.txt', 'part_3_full'),
+        ('part_4', 'dictionary.txt', 'part_4_full'),
+        ('part_5', 'dictionary.txt', 'part_5_full'),
+        ('part_6', 'dictionary.txt', 'part_6_full'),
+        ('part_7', 'dictionary.txt', 'part_7_full'),
     ]
 
     total_forms = 0
 
-    for part_name, dict_file in partitions:
+    for part_name, dict_file, output_dir_name in partitions:
         # Путь к исходному файлу
         input_path = f"{part_name}/{dict_file}"
 
         # Создаём каталог для полного словаря
-        output_dir = f"{part_name}_full"
-        Path(output_dir).mkdir(exist_ok=True)
+        Path(output_dir_name).mkdir(exist_ok=True)
 
         # Путь к выходному файлу
-        output_path = f"{output_dir}/dictionary.txt"
+        output_path = f"{output_dir_name}/dictionary.txt"
 
         # Генерируем словарь
-        generate_full_dictionary(input_path, output_path)
-
-        # Подсчитываем формы
-        with open(output_path, 'r', encoding='utf-8') as f:
-            forms_count = sum(1 for line in f if line.strip() and not line.startswith('#'))
-            total_forms += forms_count
+        forms_count = generate_full_dictionary(input_path, output_path)
+        total_forms += forms_count
 
     print("\n" + "="*80)
     print(f"ВСЕГО СГЕНЕРИРОВАНО: {total_forms} словоформ")
