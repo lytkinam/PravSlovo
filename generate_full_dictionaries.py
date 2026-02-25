@@ -4,7 +4,7 @@
 Обрабатывает партии part_1 - part_7 и создаёт каталоги part_[N]_full
 """
 
-import pymorphy3
+import pymorphy2, pymorphy3
 import re
 from pathlib import Path
 from typing import List, Set
@@ -17,7 +17,8 @@ def parse_dictionary_file(filepath: str) -> List[str]:
     terms = []
     with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
-            line = line.strip()
+            # Убираем только перевод строки, но НЕ табы
+            line = line.rstrip('\r\n')
             # Пропускаем комментарии и пустые строки
             if line.startswith('#') or not line:
                 continue
@@ -106,7 +107,7 @@ def should_skip_plural(term: str) -> bool:
 
 def generate_full_dictionary(input_file: str, output_file: str):
     """Генерирует полный словарь со склонениями"""
-    print(f"\n📖 Обработка: {input_file}")
+    print(f"\n[*] Обработка: {input_file}")
 
     # Читаем исходные термины
     terms = parse_dictionary_file(input_file)
@@ -152,7 +153,7 @@ def generate_full_dictionary(input_file: str, output_file: str):
         for form in sorted_forms:
             f.write(f"\t{form}\tru-RU\t\n")
 
-    print(f"   ✅ Сохранено в: {output_file}")
+    print(f"   [OK] Сохранено в: {output_file}")
     return len(sorted_forms)
 
 def main():
