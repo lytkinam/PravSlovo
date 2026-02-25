@@ -16,14 +16,20 @@ def parse_dictionary_file(filepath: str) -> Set[str]:
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             for line in f:
-                line = line.strip()
+                # ИСПРАВЛЕНИЕ: Удаляем только переносы строк, сохраняя \t
+                line = line.rstrip('\r\n')
+                
                 # Пропускаем комментарии и пустые строки
-                if line.startswith('#') or not line:
+                if line.startswith('#') or not line.strip():
                     continue
+                    
                 # Извлекаем термин (второе поле после TAB)
                 parts = line.split('\t')
-                if len(parts) >= 2 and parts[1]:
-                    terms.add(parts[1])
+                
+                # Формат Gboard: shortcut \t word \t language \t pos
+                if len(parts) >= 2 and parts[1].strip():
+                    terms.add(parts[1].strip())
+                    
     except FileNotFoundError:
         print(f"   ⚠️ Файл не найден: {filepath}")
     
@@ -35,7 +41,6 @@ def merge_all_dictionaries():
     print("ОБЪЕДИНЕНИЕ ВСЕХ СЛОВАРЕЙ В ОДИН ФАЙЛ")
     print("="*80)
     
-    # Список всех партий для объединения
     partitions = [
         'part_1_full',
         'part_2_full',
@@ -46,14 +51,15 @@ def merge_all_dictionaries():
         'part_7_full',
     ]
     
-    # Собираем все уникальные термины
     all_terms = set()
+    stats_counts = {}  # ИСПРАВЛЕНИЕ: Кэшируем статистику для избежания повторного чтения
     
     for part_name in partitions:
         dict_path = f"{part_name}/dictionary.txt"
         print(f"\n📖 Чтение: {dict_path}")
         
         terms = parse_dictionary_file(dict_path)
+        stats_counts[part_name] = len(terms)
         
         if terms:
             print(f"   Найдено терминов: {len(terms)}")
@@ -67,12 +73,11 @@ def merge_all_dictionaries():
     output_dir = Path("dict_full")
     output_dir.mkdir(exist_ok=True)
     
-    # Сортируем термины для удобства
+    # Сортируем термины
     sorted_terms = sorted(all_terms)
-    
-    # Записываем объединённый словарь
     output_file = output_dir / "dictionary.txt"
     
+    # Записываем объединённый словарь
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("# Gboard Dictionary version:2\n")
         f.write("# Gboard Dictionary format:shortcut\tword\tlanguage_tag\tpos_tag\n")
@@ -94,16 +99,14 @@ def merge_all_dictionaries():
         f.write(f"Всего уникальных словоформ: {len(sorted_terms)}\n\n")
         f.write("Источники:\n")
         
+        # Используем сохраненные данные
         for part_name in partitions:
-            dict_path = f"{part_name}/dictionary.txt"
-            terms = parse_dictionary_file(dict_path)
-            f.write(f"  - {part_name}: {len(terms)} терминов\n")
+            f.write(f"  - {part_name}: {stats_counts[part_name]} терминов\n")
         
         f.write(f"\nВыходной файл: dict_full/dictionary.txt\n")
         f.write(f"Формат: Gboard Dictionary (для импорта в Gboard)\n")
     
     print(f"✅ Статистика сохранена: {stats_file}")
-    
     print("\n" + "="*80)
     print("ГОТОВО!")
     print("="*80)
